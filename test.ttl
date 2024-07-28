@@ -1,0 +1,85 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; credential.txtから接続先情報を取得
+getdir DIR
+file_full_path = DIR
+strconcat file_full_path '\credential.txt'
+fileopen ct file_full_path 0 0
+; root = 'asdf'
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; ファイルの内容を読み取る
+; サーバ名
+filereadln 0 line
+strsplit line '='
+server_name = groupmatchstr2
+; IPアドレス
+filereadln 0 line
+strsplit line '='
+server_ip = groupmatchstr2
+; ユーザ名
+filereadln 0 line
+strsplit line '='
+username = groupmatchstr2
+; パスワード
+filereadln 0 line
+strsplit line '='
+password = groupmatchstr2
+; 一覧表示
+message = server_name
+strconcat message "\n"
+strconcat message server_ip
+strconcat message "\n"
+strconcat message username
+strconcat message "\n"
+strconcat message password
+strspecial message
+fileclose ct
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 日付とサーバ名でログファイルを命名
+logname = DIR
+strconcat logname "\"
+getdate DATE "%Y%m%d"
+strconcat logname DATE
+strconcat logname "_"
+strconcat logname server_name
+strconcat logname ".log"
+
+;;;;; 接続
+; command = server_ip
+; strconcat command ":22222 /ssh2 /auth=password /user="
+; strconcat command username
+; strconcat command " /passwd="
+; strconcat command password
+sprintf2 com "%s:22222 /auth=password /user=%s /passwd=%s" server_ip username password
+connect com
+
+;;;;; ログを取得開始
+logopen logname 0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; shスクリプト実行
+; マクロと同じディレクトリにあるbashファイルをサーバへ転送し，スクリプト実行
+sprintf2 localfile "%s\test.sh" DIR
+sprintf2 remotefile "/home/%s/test.sh" username
+sendfile localfile 0
+wait "$"
+sendln 'chmod +x /home/'username'/test.sh'
+wait "$"
+sendln '/home/'username'/test.sh'
+wait '$ '
+
+sendln 'rm /home/'username'/test.sh'
+wait "$"
+; スクリプトが完了した後，再起動
+sendln 'sudo sudo shutdown -r'
+wait '$ '
+
+sendln "exit"
+logclose
+
+end
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

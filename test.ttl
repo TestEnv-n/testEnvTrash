@@ -1,41 +1,74 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; credential.txtから接続先情報を取得
 getdir DIR
-file_full_path = DIR
-strconcat file_full_path '\credential.txt'
-fileopen ct file_full_path 0 0
+sprintf2 credential_path '%s\credential.txt' DIR
+fileopen ct credential_path 0 0
 ; root = 'asdf'
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; ファイルの内容を読み取る
+;;;; credential.txtの内容を読み取り，接続
 ; サーバ名
-filereadln 0 line
+filereadln ct line
 strsplit line '='
 server_name = groupmatchstr2
+; ホスト名
+filereadln ct line
+strsplit line '='
+host_name = groupmatchstr2
 ; IPアドレス
-filereadln 0 line
+filereadln ct line
 strsplit line '='
 server_ip = groupmatchstr2
 ; ユーザ名
-filereadln 0 line
+filereadln ct line
 strsplit line '='
 username = groupmatchstr2
 ; パスワード
-filereadln 0 line
+filereadln ct line
 strsplit line '='
 password = groupmatchstr2
-; 一覧表示
-message = server_name
-strconcat message "\n"
-strconcat message server_ip
-strconcat message "\n"
-strconcat message username
-strconcat message "\n"
-strconcat message password
-strspecial message
 fileclose ct
+; 一覧表示
+sprintf2 credential " server名:%s\n host名:%s/n IP:%s\n user名:%s\n passwd:%s\n" server_name host_name server_ip username password
+strspecial credential
+; messagebox credential "credential"
+inputbox credential '正しい場合は「y」を入力（半角のみ）'
+strmatch inputstr "y"
+call STR_MATCH
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;; setting.confを読み取り，変数情報取得
+sprintf2 setting_path '%s\setting.conf' DIR
+fileopen sc setting_path 0 0
+; シェルスクリプトのテキスト名
+filereadln sc line
+strsplit line '='
+sh_script = groupmatchstr2
+; rpm一覧のテキスト名
+filereadln sc line
+strsplit line '='
+rpm_txt = groupmatchstr2
+; 一覧表示
+sprintf2 setting " script:%s\n rpm_txt:%s" sh_script rpm_txt
+strspecial setting
+fileclose sc
+inputbox setting '正しい場合は「y」を入力（半角のみ）'
+strmatch inputstr "y"
+call STR_MATCH
+messagebox "test" "t"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 接続
+; command = server_ip
+; strconcat command ":22222 /ssh2 /auth=password /user="
+; strconcat command username
+; strconcat command " /passwd="
+; strconcat command password
+sprintf2 COMMAND "%s:22222 /auth=password /user=%s /passwd=%s" server_ip username password
+connect COMMAND
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -49,37 +82,47 @@ strconcat logname "_"
 strconcat logname server_name
 strconcat logname ".log"
 
-;;;;; 接続
-; command = server_ip
-; strconcat command ":22222 /ssh2 /auth=password /user="
-; strconcat command username
-; strconcat command " /passwd="
-; strconcat command password
-sprintf2 com "%s:22222 /auth=password /user=%s /passwd=%s" server_ip username password
-connect com
-
 ;;;;; ログを取得開始
 logopen logname 0
+wait "$"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; shスクリプト実行
 ; マクロと同じディレクトリにあるbashファイルをサーバへ転送し，スクリプト実行
 sprintf2 localfile "%s\test.sh" DIR
-sprintf2 remotefile "/home/%s/test.sh" username
-sendfile localfile 0
+scpsend localfile
 wait "$"
-sendln 'chmod +x /home/'username'/test.sh'
+sendln "bash test.sh"
 wait "$"
-sendln '/home/'username'/test.sh'
-wait '$ '
-
-sendln 'rm /home/'username'/test.sh'
+sprintf2 rpmfile "%s\" DIR
+scprecv "RPM一覧.txt" DIR
 wait "$"
-; スクリプトが完了した後，再起動
-sendln 'sudo sudo shutdown -r'
-wait '$ '
+sendln "rm test.sh"
+wait "$"
+; ; スクリプトが完了した後，再起動
+; sendln 'sudo sudo shutdown -r'
+; wait '$ '
 
 sendln "exit"
 logclose
 
 end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 文字列一致の関数（サブルーチン）設定
+: STR_MATCH
+if result != 1 then
+    ; 処理を中止
+    messagebox "yを確認出来ませんでした" "終了ダイアログ"
+    goto STOP
+else
+    return
+endif
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+:STOP
+end

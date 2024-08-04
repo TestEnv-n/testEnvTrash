@@ -39,34 +39,29 @@ call STR_MATCH
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;; setting.confを読み取り，変数情報取得
-sprintf2 setting_path '%s\setting.conf' DIR
+set_conf = "setting.conf"
+sprintf2 setting_path '%s\%s' DIR set_conf
 fileopen sc setting_path 0 0
-; シェルスクリプトのテキスト名
+; シェルスクリプトのファイル名
 filereadln sc line
 strsplit line '='
 sh_script = groupmatchstr2
-; rpm一覧のテキスト名
+; rpm一覧のファイル名
 filereadln sc line
 strsplit line '='
 rpm_txt = groupmatchstr2
 ; 一覧表示
-sprintf2 setting " script:%s\n rpm_txt:%s" sh_script rpm_txt
+sprintf2 setting " conf:%s\n script:%s\n rpm_txt:%s" set_conf sh_script rpm_txt
 strspecial setting
 fileclose sc
 inputbox setting '正しい場合は「y」を入力（半角のみ）'
 strmatch inputstr "y"
 call STR_MATCH
-messagebox "test" "t"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; 接続
-; command = server_ip
-; strconcat command ":22222 /ssh2 /auth=password /user="
-; strconcat command username
-; strconcat command " /passwd="
-; strconcat command password
 sprintf2 COMMAND "%s:22222 /auth=password /user=%s /passwd=%s" server_ip username password
 connect COMMAND
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,24 +86,31 @@ wait "$"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; shスクリプト実行
 ; マクロと同じディレクトリにあるbashファイルをサーバへ転送し，スクリプト実行
-sprintf2 localfile "%s\test.sh" DIR
-scpsend localfile
+sprintf2 sh_local "%s\%s" DIR sh_script
+scpsend sh_local
 wait "$"
-sendln "bash test.sh"
+sprintf2 set_conf_local "%s\%s" DIR set_conf
+scpsend set_conf_local
 wait "$"
-sprintf2 rpmfile "%s\" DIR
-scprecv "RPM一覧.txt" DIR
+sendln "source setting.conf"
 wait "$"
-sendln "rm test.sh"
+sendln "bash ${SH_SCRIPT}"
+wait "$"
+sprintf2 local_rpm "%s\%s" DIR rpm_txt
+pause 3
+scprecv rpm_txt local_rpm
+wait "$"
+sendln "rm ${SH_SCRIPT}"
+wait "$"
+sendln "rm ${RPM_TXT}"
 wait "$"
 ; ; スクリプトが完了した後，再起動
 ; sendln 'sudo sudo shutdown -r'
 ; wait '$ '
 
-sendln "exit"
+; sendln "exit"
 logclose
-
-end
+; end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -126,3 +128,13 @@ endif
 
 :STOP
 end
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 接続の方式part2
+; command = server_ip
+; strconcat command ":22222 /ssh2 /auth=password /user="
+; strconcat command username
+; strconcat command " /passwd="
+; strconcat command password
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

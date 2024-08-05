@@ -1,0 +1,142 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 1. 作業前　正常性確認
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; credential.txtから接続先情報を取得
+getdir DIR
+sprintf2 credential_path '%s\credential.txt' DIR
+fileopen ct credential_path 0 0
+; root = 'asdf'
+
+;;;; credential.txtの内容を読み取り，接続
+; サーバ名
+filereadln ct line
+strsplit line '='
+server_name = groupmatchstr2
+; ホスト名
+filereadln ct line
+strsplit line '='
+host_name = groupmatchstr2
+; IPアドレス
+filereadln ct line
+strsplit line '='
+server_ip = groupmatchstr2
+; ユーザ名
+filereadln ct line
+strsplit line '='
+username = groupmatchstr2
+; パスワード
+filereadln ct line
+strsplit line '='
+password = groupmatchstr2
+fileclose ct
+; 一覧表示
+sprintf2 credential " server名:%s\n host名:%s/n IP:%s\n user名:%s\n passwd:%s\n" server_name host_name server_ip username password
+strspecial credential
+; messagebox credential "credential"
+inputbox credential '正しい場合は「y」を入力（半角のみ）'
+strmatch inputstr "y"
+call STR_MATCH
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;; setting.confを読み取り，変数情報取得
+set_conf = "setting.conf"
+sprintf2 setting_path '%s\%s' DIR set_conf
+fileopen sc setting_path 0 0
+; シェルスクリプトのファイル名
+filereadln sc line
+strsplit line '='
+sh_script = groupmatchstr2
+; 一覧表示
+sprintf2 setting " conf:%s\n script:%s\n" set_conf sh_script
+strspecial setting
+fileclose sc
+inputbox setting '正しい場合は「y」を入力（半角のみ）'
+strmatch inputstr "y"
+call STR_MATCH
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 接続
+sprintf2 COMMAND "%s:22222 /auth=password /user=%s /passwd=%s" server_ip username password
+connect COMMAND
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 日付とサーバ名でログファイルを命名
+logname = DIR
+strconcat logname "\"
+getdate DATE "%Y%m%d"
+strconcat logname DATE
+strconcat logname "_"
+strconcat logname server_name
+strconcat logname ".log"
+
+;;;;; ログを取得開始
+logopen logname 0
+wait "$"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; マクロと同じディレクトリにあるbashファイルをサーバへ転送し，スクリプト実行
+; シェルスクリプト転送（ローカル　→　サーバ）
+sprintf2 sh_local "%s\%s" DIR sh_script
+scpsend sh_local
+wait "$"
+; setting.conf転送（ローカル　→　サーバ）
+sprintf2 set_conf_local "%s\%s" DIR set_conf
+scpsend set_conf_local
+wait "$"
+sendln "source setting.conf"
+wait "$"
+; シェルスクリプトの実行
+sendln "bash ${SH_SCRIPT}"
+wait "$"
+wait "$"
+; サーバ上にある作業ファイルを削除
+sendln "rm setting.conf"
+wait "$"
+sendln "rm ${SH_SCRIPT}"
+wait "$"
+
+; ; スクリプトが完了した後，再起動
+; sendln 'sudo sudo shutdown -r'
+; wait '$ '
+
+; sendln "exit"
+logclose
+; end
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 文字列一致の関数（サブルーチン）設定
+: STR_MATCH
+if result != 1 then
+    ; 処理を中止
+    messagebox "yを確認出来ませんでした" "終了ダイアログ"
+    goto STOP
+else
+    return
+endif
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+:STOP
+end
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 接続の方式part2
+; command = server_ip
+; strconcat command ":22222 /ssh2 /auth=password /user="
+; strconcat command username
+; strconcat command " /passwd="
+; strconcat command password
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,0 +1,54 @@
+  UNIT                               LOAD   ACTIVE SUB     DESCRIPTION
+  atd.service                        loaded active running Deferred execution scheduler
+  auditd.service                     loaded active running Security Auditing Service
+  chronyd.service                    loaded active running NTP client/server
+  crond.service                      loaded active running Command Scheduler
+  dbus-broker.service                loaded active running D-Bus System Message Bus
+  dracut-shutdown.service            loaded active exited  Restore /run/initramfs on shutdown
+  firewalld.service                  loaded active running firewalld - dynamic firewall daemon
+  getty@tty1.service                 loaded active running Getty on tty1
+  httpd.service                      loaded active running The Apache HTTP Server
+  kdump.service                      loaded active exited  Crash recovery kernel arming
+  kmod-static-nodes.service          loaded active exited  Create List of Static Device Nodes
+  libstoragemgmt.service             loaded active running libstoragemgmt plug-in server daemon
+  lvm2-monitor.service               loaded active exited  Monitoring of LVM2 mirrors, snapshots etc. using dmeventd or progress polling
+● mcelog.service                     loaded failed failed  Machine Check Exception Logging Daemon
+  named.service                      loaded active running Berkeley Internet Name Domain (DNS)
+  NetworkManager-wait-online.service loaded active exited  Network Manager Wait Online
+  NetworkManager.service             loaded active running Network Manager
+  nis-domainname.service             loaded active exited  Read and set NIS domainname from /etc/sysconfig/network
+  plymouth-quit-wait.service         loaded active exited  Hold until boot process finishes up
+  plymouth-quit.service              loaded active exited  Terminate Plymouth Boot Screen
+  plymouth-read-write.service        loaded active exited  Tell Plymouth To Write Out Runtime Data
+  plymouth-start.service             loaded active exited  Show Plymouth Boot Screen
+  polkit.service                     loaded active running Authorization Manager
+  rsyslog.service                    loaded active running System Logging Service
+  sshd.service                       loaded active running OpenSSH server daemon
+  systemd-boot-update.service        loaded active exited  Automatic Boot Loader Update
+  systemd-hostnamed.service          loaded active running Hostname Service
+  systemd-journal-flush.service      loaded active exited  Flush Journal to Persistent Storage
+  systemd-journald.service           loaded active running Journal Service
+  systemd-logind.service             loaded active running User Login Management
+  systemd-modules-load.service       loaded active exited  Load Kernel Modules
+  systemd-network-generator.service  loaded active exited  Generate network units from Kernel command line
+  systemd-random-seed.service        loaded active exited  Load/Save OS Random Seed
+  systemd-remount-fs.service         loaded active exited  Remount Root and Kernel File Systems
+  systemd-sysctl.service             loaded active exited  Apply Kernel Variables
+  systemd-tmpfiles-setup-dev.service loaded active exited  Create Static Device Nodes in /dev
+  systemd-tmpfiles-setup.service     loaded active exited  Create Volatile Files and Directories
+  systemd-udev-settle.service        loaded active exited  Wait for udev To Complete Device Initialization
+  systemd-udev-trigger.service       loaded active exited  Coldplug All udev Devices
+  systemd-udevd.service              loaded active running Rule-based Manager for Device Events and Files
+  systemd-update-utmp.service        loaded active exited  Record System Boot/Shutdown in UTMP
+  systemd-user-sessions.service      loaded active exited  Permit User Sessions
+  systemd-vconsole-setup.service     loaded active exited  Setup Virtual Console
+  tomcat.service                     loaded active running Apache Tomcat Web Application Container
+  tuned.service                      loaded active running Dynamic System Tuning Daemon
+  user-runtime-dir@1000.service      loaded active exited  User Runtime Directory /run/user/1000
+  user@1000.service                  loaded active running User Manager for UID 1000
+
+LOAD   = Reflects whether the unit definition was properly loaded.
+ACTIVE = The high-level unit activation state, i.e. generalization of SUB.
+SUB    = The low-level unit activation state, values depend on unit type.
+47 loaded units listed. Pass --all to see loaded but inactive units, too.
+To show all installed unit files use 'systemctl list-unit-files'.

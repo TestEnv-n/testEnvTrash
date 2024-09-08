@@ -1,0 +1,116 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 3. Ver.UP 作業
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; Ver.UP種別を設定
+; RHSAのみ = 1
+; kernel + RHSA = 2
+; kernel + redhat-release + RHSA = 3
+verup_part = "RHSAのみ = 1\n kernel + RHSA = 2\n kernel + redhat-release + RHSA = 3"
+strspecial verup_part
+inputbox verup_part "Ver.UP種別を入力してください。"
+verup_part = inputstr ; 文字置き換え
+; エラーハンドルを入れるべきかも（1-4以外の値が入力される可能性）
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; credential.txtから接続先情報を取得
+getdir DIR
+SHOSEKI="証跡"
+sprintf2 credential_path '%s\credential.txt' DIR
+fileopen ct credential_path 0 0
+
+;;;; credential.txtの内容を読み取り，接続
+; サーバ名
+filereadln ct line
+strsplit line '='
+server_name = groupmatchstr2
+; ホスト名
+filereadln ct line
+strsplit line '='
+host_name = groupmatchstr2
+; IPアドレス
+filereadln ct line
+strsplit line '='
+server_ip = groupmatchstr2
+; ユーザ名
+filereadln ct line
+strsplit line '='
+username = groupmatchstr2
+; パスワード入力
+inputbox "パスワードを入力してください。" "..."
+password = inputstr
+fileclose ct
+; 一覧表示
+sprintf2 credential " server名:%s\n host名:%s/n IP:%s\n user名:%s\n passwd:%s\n" server_name host_name server_ip username password
+strspecial credential
+; messagebox credential "credential"
+inputbox credential '正しい場合は「y」を入力（半角のみ）'
+strmatch inputstr "y"
+call STR_MATCH
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 接続
+sprintf2 COMMAND "%s:22222 /auth=password /user=%s /passwd=%s" server_ip username password
+connect COMMAND
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 日付とサーバ名でログファイルを命名
+getdate DATE "%Y%m%d"
+sprintf2 logname "%s\%s\%s_%s.log" DIR SHOSEKI DATE server_name
+
+;;;;; ログを取得開始
+logopen logname 0
+wait "$"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; マクロと同じディレクトリにあるbashファイルをサーバへ転送し，スクリプト実行
+; シェルスクリプト転送（ローカル　→　サーバ）
+sprintf2 sh_local "%s\%s" DIR sh_script
+scpsend sh_local
+pause 3
+; setting.conf転送（ローカル　→　サーバ）
+sprintf2 set_conf_local "%s\%s" DIR set_conf
+scpsend set_conf_local
+pause 3
+sendln "source setting.conf"
+wait "$"
+; シェルスクリプトの実行
+sendln "bash ${SH_SCRIPT}"
+wait "$"
+; サーバ上にある作業ファイルを削除
+sendln "rm setting.conf"
+wait "$"
+sendln "rm ${SH_SCRIPT}"
+wait "$"
+
+sendln "exit"
+logclose
+end
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 文字列一致の関数（サブルーチン）設定
+: STR_MATCH
+    if result != 1 then
+        ; 処理を中止
+        messagebox "yを確認出来ませんでした" "終了ダイアログ"
+        goto STOP
+    else
+        return
+    endif
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+:STOP
+    end

@@ -1,0 +1,1 @@
+Linux teratest 5.14.0-480.el9.x86_64 #1 SMP PREEMPT_DYNAMIC Fri Jul 12 20:45:27 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux

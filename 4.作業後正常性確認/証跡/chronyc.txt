@@ -1,0 +1,6 @@
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+^- time.cloudflare.com           3   6   377     0  +4189us[+4189us] +/-   63ms
+^* mail1.marinecat.net           2   6   377    65   +215us[ -368ns] +/- 3279us
+^- v163-44-97-196.rm2n.stat>     2   6   377    64   -887us[ -887us] +/-   18ms
+^- 108.160.132.224.vultruse>     2   6   377     0   +854us[ +854us] +/-   36ms

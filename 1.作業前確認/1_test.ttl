@@ -1,0 +1,182 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 1. 作業前　正常性確認
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; credential.txtから接続先情報を取得
+getdir DIR
+SHOSEKI="証跡"
+sprintf2 credential_path '%s\credential.txt' DIR
+fileopen ct credential_path 0 0
+; root = 'asdf'
+
+;;;; credential.txtの内容を読み取り，接続
+; サーバ名
+filereadln ct line
+strsplit line '='
+server_name = groupmatchstr2
+; ホスト名
+filereadln ct line
+strsplit line '='
+host_name = groupmatchstr2
+; IPアドレス
+filereadln ct line
+strsplit line '='
+server_ip = groupmatchstr2
+; ユーザ名
+filereadln ct line
+strsplit line '='
+username = groupmatchstr2
+; パスワード入力
+inputbox "パスワードを入力してください。" "..."
+password = inputstr
+fileclose ct
+; 一覧表示
+sprintf2 credential " server名:%s\n host名:%s\n IP:%s\n user名:%s\n passwd:%s\n" server_name host_name server_ip username password
+strspecial credential
+; messagebox credential "credential"
+inputbox credential '正しい場合は「y」を入力（半角のみ）'
+strmatch inputstr "y"
+call STR_MATCH
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;; setting.confを読み取り，変数情報取得
+set_conf = "setting.conf"
+sprintf2 setting_path '%s\%s' DIR set_conf
+fileopen sc setting_path 0 0
+; シェルスクリプトのファイル名
+filereadln sc line
+strsplit line '='
+sh_script = groupmatchstr2
+; rpm一覧のファイル名
+filereadln sc line
+strsplit line '='
+rpm_txt = groupmatchstr2
+; サービス一覧のファイル名
+filereadln sc line
+strsplit line '='
+services_txt = groupmatchstr2
+; kernel情報のファイル名
+filereadln sc line
+strsplit line '='
+kernel_txt = groupmatchstr2
+; swap領域情報のファイル名
+filereadln sc line
+strsplit line '='
+swap_txt = groupmatchstr2
+fileclose sc
+; 一覧表示 , 確認処理は不要と判断し，コメントアウト
+; sprintf2 setting " conf:%s\n script:%s\n rpm_txt:%s services_txt:%s\n kernel_txt:%s\n swap_txt:%s" set_conf sh_script rpm_txt services_txt kernel_txt swap_txt
+; strspecial setting
+; inputbox setting '正しい場合は「y」を入力（半角のみ）'
+; strmatch inputstr "y"
+; call STR_MATCH
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 接続
+sprintf2 COMMAND "%s:22222 /auth=password /user=%s /passwd=%s" server_ip username password
+connect COMMAND
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 日付とサーバ名でログファイルを命名
+getdate DATE "%Y%m%d"
+sprintf2 logname "%s\%s\%s_%s.log" DIR SHOSEKI DATE server_name
+
+;;;;; ログを取得開始
+logopen logname 0
+wait "$"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; マクロと同じディレクトリにあるbashファイルをサーバへ転送し，スクリプト実行
+; シェルスクリプト転送（ローカル　→　サーバ）
+sprintf2 sh_local "%s\%s" DIR sh_script
+scpsend sh_local
+pause 3
+; setting.conf転送（ローカル　→　サーバ）
+sprintf2 set_conf_local "%s\%s" DIR set_conf
+scpsend set_conf_local
+pause 3
+sendln "source setting.conf"
+wait "$"
+; シェルスクリプトの実行
+sendln "bash ${SH_SCRIPT}"
+wait "$"
+pause 1 ; このpauseが無いと転送がうまく判別できない
+; rpm一覧転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI rpm_txt
+scprecv rpm_txt local_file
+call COMFIRM_SCP
+; service一覧転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI services_txt
+scprecv services_txt local_file
+call COMFIRM_SCP
+; kernel情報転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI kernel_txt
+scprecv kernel_txt local_file
+call COMFIRM_SCP
+; swap情報転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI swap_txt
+scprecv swap_txt local_file
+call COMFIRM_SCP
+; サーバ上にある作業ファイルを削除
+sendln "rm setting.conf"
+wait "$"
+sendln "rm ${SH_SCRIPT}"
+wait "$"
+sendln "rm ${RPM_TXT}"
+wait "$"
+sendln "rm ${SERVICES_TXT}"
+wait "$"
+sendln "rm ${KERNEL_TXT}"
+wait "$"
+sendln "rm ${SWAP_TXT}"
+wait "$"
+
+sendln "exit"
+logclose
+end
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 文字列一致の関数（サブルーチン）設定
+: STR_MATCH
+    if result != 1 then
+        ; 処理を中止
+        messagebox "yを確認出来ませんでした" "終了ダイアログ"
+        goto STOP
+    else
+        return
+    endif
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; ファイル転送の自動判断設定
+: COMFIRM_SCP
+    pause 1
+    size_buf = 0
+    call COMFIRM_FILE
+: COMFIRM_FILE
+    filestat local_file file_size
+    pause 1
+    if file_size = size_buf then
+        return
+    else
+        size_buf = file_size
+        goto COMFIRM_FILE
+    endif
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+:STOP
+    end

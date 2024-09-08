@@ -1,0 +1,16 @@
+-rw-------. 1 root root 11551724  9月  8 22:39 sosreport-teratest-2024-09-08-adaplkf.tar.xz
+-rw-r--r--. 1 root root       65  9月  8 22:39 sosreport-teratest-2024-09-08-adaplkf.tar.xz.sha256
+-rw-------. 1 root root 11533780  9月  8 22:36 sosreport-teratest-2024-09-08-ixdjshp.tar.xz
+-rw-r--r--. 1 root root       65  9月  8 22:36 sosreport-teratest-2024-09-08-ixdjshp.tar.xz.sha256
+-rw-------. 1 root root 11571164  9月  8 23:28 sosreport-teratest-2024-09-08-kdvudef.tar.xz
+-rw-r--r--. 1 root root       65  9月  8 23:28 sosreport-teratest-2024-09-08-kdvudef.tar.xz.sha256
+-rw-------. 1 root root 11563272  9月  8 22:49 sosreport-teratest-2024-09-08-mxouvcf.tar.xz
+-rw-r--r--. 1 root root       65  9月  8 22:49 sosreport-teratest-2024-09-08-mxouvcf.tar.xz.sha256
+-rw-------. 1 root root 11565496  9月  8 23:20 sosreport-teratest-2024-09-08-nhszfqv.tar.xz
+-rw-r--r--. 1 root root       65  9月  8 23:20 sosreport-teratest-2024-09-08-nhszfqv.tar.xz.sha256
+-rw-------. 1 root root 11568800  9月  8 23:07 sosreport-teratest-2024-09-08-qrdikuv.tar.xz
+-rw-r--r--. 1 root root       65  9月  8 23:07 sosreport-teratest-2024-09-08-qrdikuv.tar.xz.sha256
+-rw-------. 1 root root 11563036  9月  8 22:51 sosreport-teratest-2024-09-08-tfwuqaz.tar.xz
+-rw-r--r--. 1 root root       65  9月  8 22:51 sosreport-teratest-2024-09-08-tfwuqaz.tar.xz.sha256
+-rw-------. 1 root root 11547484  9月  8 22:46 sosreport-teratest-2024-09-08-vimggcu.tar.xz
+-rw-r--r--. 1 root root       65  9月  8 22:46 sosreport-teratest-2024-09-08-vimggcu.tar.xz.sha256

@@ -1,0 +1,253 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 1. 作業前　正常性確認
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; credential.txtから接続先情報を取得
+getdir DIR
+SHOSEKI="証跡"
+sprintf2 credential_path '%s\credential.txt' DIR
+fileopen ct credential_path 0 0
+; root = 'asdf'
+
+;;;; credential.txtの内容を読み取り，接続
+; サーバ名
+filereadln ct line
+strsplit line '='
+server_name = groupmatchstr2
+; ホスト名
+filereadln ct line
+strsplit line '='
+host_name = groupmatchstr2
+; IPアドレス
+filereadln ct line
+strsplit line '='
+server_ip = groupmatchstr2
+; ユーザ名
+filereadln ct line
+strsplit line '='
+username = groupmatchstr2
+; パスワード入力
+inputbox "パスワードを入力してください。" "..."
+password = inputstr
+fileclose ct
+; 一覧表示
+sprintf2 credential " server名:%s\n host名:%s/n IP:%s\n user名:%s\n passwd:%s\n" server_name host_name server_ip username password
+strspecial credential
+; messagebox credential "credential"
+inputbox credential '正しい場合は「y」を入力（半角のみ）'
+strmatch inputstr "y"
+call STR_MATCH
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;; setting.confを読み取り，変数情報取得
+set_conf = "setting.conf"
+sprintf2 setting_path '%s\%s' DIR set_conf
+fileopen sc setting_path 0 0
+; シェルスクリプトのファイル名
+filereadln sc line
+strsplit line '='
+sh_script = groupmatchstr2
+; reboot情報のファイル名
+filereadln sc line
+strsplit line '='
+reboot_txt = groupmatchstr2
+; boot.logの出力内容先のファイル名
+filereadln sc line
+strsplit line '='
+boot_txt = groupmatchstr2
+; dmesgの出力内容先のファイル名
+filereadln sc line
+strsplit line '='
+dmesg_txt = groupmatchstr2
+; journalctlの出力内容先のファイル名
+filereadln sc line
+strsplit line '='
+journalctl_txt = groupmatchstr2
+; sosreportの出力内容先のファイル名
+filereadln sc line
+strsplit line '='
+sosreport_txt = groupmatchstr2
+; rpm一覧のファイル名
+filereadln sc line
+strsplit line '='
+rpm_txt = groupmatchstr2
+; サービス一覧のファイル名
+filereadln sc line
+strsplit line '='
+services_txt = groupmatchstr2
+; サービス一覧（設計書用）のファイル名
+filereadln sc line
+strsplit line '='
+services_design_txt = groupmatchstr2
+; kernel情報のファイル名
+filereadln sc line
+strsplit line '='
+kernel_txt = groupmatchstr2
+; dig情報のファイル名
+filereadln sc line
+strsplit line '='
+dig_txt = groupmatchstr2
+; chronyc情報のファイル名
+filereadln sc line
+strsplit line '='
+chronyc_txt = groupmatchstr2
+fileclose sc
+; 一覧表示 , 確認処理は不要と判断し，コメントアウト
+; sprintf2 setting " conf:%s\n sh_script:%s\n reboot_txt:%s\n boot_txt:%s\n dmesg_txt:%s\n journalctl_txt:%s\n sosreport_txt:%s\n rpm_txt:%s services_txt:%s\n services_design_txt:%s\n kernel_txt:%s\n dig_txt:%s\n chronyc_txt:%s\n" set_conf sh_script reboot_txt boot_txt dmesg_txt journalctl_txt sosreport_txt rpm_txt services_txt services_design_txt kernel_txt dig_txt chronyc_txt
+; strspecial setting
+; inputbox setting '正しい場合は「y」を入力（半角のみ）'
+; strmatch inputstr "y"
+; call STR_MATCH
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 接続
+sprintf2 COMMAND "%s:22222 /auth=password /user=%s /passwd=%s" server_ip username password
+connect COMMAND
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 日付とサーバ名でログファイルを命名
+getdate DATE "%Y%m%d"
+sprintf2 logname "%s\%s\%s_%s.log" DIR SHOSEKI DATE server_name
+
+;;;;; ログを取得開始
+logopen logname 0
+wait "$"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; マクロと同じディレクトリにあるbashファイルをサーバへ転送し，スクリプト実行
+; シェルスクリプト転送（ローカル　→　サーバ）
+sprintf2 sh_local "%s\%s" DIR sh_script
+scpsend sh_local
+pause 3
+; setting.conf転送（ローカル　→　サーバ）
+sprintf2 set_conf_local "%s\%s" DIR set_conf
+scpsend set_conf_local
+pause 3
+sendln "source setting.conf"
+wait "$"
+; シェルスクリプトの実行
+sendln "bash ${SH_SCRIPT}"
+wait "$" ; sosreport出力時になぜか入力されるため，ダミーで入れている。
+wait "$"
+pause 1 ; このpauseが無いと転送がうまく判別できない
+; reboot情報転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI reboot_txt
+scprecv reboot_txt local_file
+call COMFIRM_SCP
+; boot.logの出力内容転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI boot_txt
+scprecv boot_txt local_file
+call COMFIRM_SCP
+; dmesgの出力内容転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI dmesg_txt
+scprecv dmesg_txt local_file
+call COMFIRM_SCP
+; journalctlの出力内容転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI journalctl_txt
+scprecv journalctl_txt local_file
+call COMFIRM_SCP
+; sosreportの出力内容転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI sosreport_txt
+scprecv sosreport_txt local_file
+call COMFIRM_SCP
+; rpm一覧転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI rpm_txt
+scprecv rpm_txt local_file
+call COMFIRM_SCP
+; service一覧転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI services_txt
+scprecv services_txt local_file
+call COMFIRM_SCP
+; service一覧（設計書用）転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI services_design_txt
+scprecv services_design_txt local_file
+call COMFIRM_SCP
+; kernel情報転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI kernel_txt
+scprecv kernel_txt local_file
+call COMFIRM_SCP
+; dig情報転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI dig_txt
+scprecv dig_txt local_file
+call COMFIRM_SCP
+; kernel情報転送（サーバ　→　ローカル）
+sprintf2 local_file "%s\%s\%s" DIR SHOSEKI chronyc_txt
+scprecv chronyc_txt local_file
+call COMFIRM_SCP
+; サーバ上にある作業ファイルを削除
+sendln "rm setting.conf"
+wait "$"
+sendln "rm ${SH_SCRIPT}"
+wait "$"
+sendln "rm ${REBOOT_TXT}"
+wait "$"
+sendln "rm ${BOOT_TXT}"
+wait "$"
+sendln "rm ${DMESG_TXT}"
+wait "$"
+sendln "rm ${JOURNALCTL_TXT}"
+wait "$"
+sendln "rm ${SOSREPORT_TXT}"
+wait "$"
+sendln "rm ${RPM_TXT}"
+wait "$"
+sendln "rm ${SERVICES_TXT}"
+wait "$"
+sendln "rm ${SERVICES_DESIGN_TXT}"
+wait "$"
+sendln "rm ${KERNEL_TXT}"
+wait "$"
+sendln "rm ${DIG_TXT}"
+wait "$"
+sendln "rm ${CHRONYC_TXT}"
+wait "$"
+
+sendln "exit"
+logclose
+end
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; 文字列一致の関数（サブルーチン）設定
+: STR_MATCH
+    if result != 1 then
+        ; 処理を中止
+        messagebox "yを確認出来ませんでした" "終了ダイアログ"
+        goto STOP
+    else
+        return
+    endif
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; ファイル転送の自動判断設定
+: COMFIRM_SCP
+    pause 1
+    size_buf = 0
+    call COMFIRM_FILE
+: COMFIRM_FILE
+    filestat local_file file_size
+    pause 1
+    if file_size = size_buf then
+        return
+    else
+        size_buf = file_size
+        goto COMFIRM_FILE
+    endif
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+:STOP
+    end
